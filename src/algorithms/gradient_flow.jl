@@ -1,0 +1,111 @@
+include("utils.jl")
+using ProgressMeter
+
+struct BGCHParams
+    dt::Float64
+    ϵ::Float64
+    λ0::Float64
+    C1::Float64
+    C2::Float64
+    iters::Int
+    L1::Float64
+    L2::Float64
+
+    function BGCHParams(dt,ϵ,λ0,C1,C2,iters,L1,L2)
+
+        C1 > 1/ϵ || error("C1 must be > 1/ϵ")
+        C2 > λ0 || error("C2 must be > λ0")
+
+        new(dt,ϵ,λ0,C1,C2,iters,L1,L2)
+    end
+end
+
+function BGCHParams(;
+    dt::Float64 = 1.0,
+    ϵ::Float64 = 0.1,
+    λ0::Float64 = 1e8,
+    C1::Float64 = 4e3,
+    C2::Float64 = 1e8 + 1.0,
+    iters::Int = 30_000,
+    L1::Float64 = 1.0,
+    L2::Float64 = 1.0
+)
+    dt > 0 || error("dt must be positive")
+    ϵ > 0 || error("ϵ must be positive")
+    λ0 >= 0 || error("λ0 must be nonnegative")
+    iters > 0 || error("iters must be positive")
+    L1 > 0 || error("L1 must be positive")
+    L2 > 0 || error("L2 must be positive")
+
+    C1 > 1 / ϵ || error("C1 must satisfy C1 > 1/ϵ")
+    C2 >= λ0 || error("C2 must satisfy C2 >= λ0")
+
+    return BGCHParams(dt, ϵ, λ0, C1, C2, iters, L1, L2)
+end
+
+struct BGCHProblem
+    experiment
+    params::BGCHParams
+end
+
+struct BGCHCache
+    μ::Matrix{Float64}
+    lhs::Matrix{Float64}
+    λmask::Matrix{Float64}
+end
+
+function BGCHCache(problem::BGCHProblem)
+    U = problem.experiment.damaged
+    N, M = size(U)
+    p = problem.params
+    μ = laplacian_eigs(N, M, p.L1, p.L2)
+    lhs = 1 .+ p.dt .* (p.ϵ .* μ.^2 .+ p.C1 .* μ .+ p.C2)
+    λmask = p.λ0 .* problem.experiment.mask
+    return BGCHCache(μ, lhs, λmask)
+end
+
+function bgch_step(U::Matrix, problem::BGCHProblem, cache::BGCHCache)
+    p = problem.params
+    f = problem.experiment.image
+    rhs =
+    U .+
+    p.dt .* (
+        (1/p.ϵ) .* laplacian(Fprime(U), cache.μ) .-
+        p.C1 .* laplacian(U, cache.μ) .+
+        cache.λmask .* (f .- U) .+
+        p.C2 .* U
+    )
+    rhs_hat = dct2(rhs)
+    U_next_hat = rhs_hat ./ cache.lhs
+    return idct2(U_next_hat)
+end
+
+
+function solve(problem::BGCHProblem)
+    U = copy(problem.experiment.damaged)
+    cache = BGCHCache(problem)
+    Us = [U]
+    @showprogress for k in 1:problem.params.iters
+        U = bgch_step(U, problem, cache)
+        push!(Us, U)
+    end
+    return Us
+end
+
+
+begin
+    img = make_boring_image(200, 200)
+    params = BGCHParams()
+    problem = BGCHProblem(img, params)
+    sol = solve(problem)
+end
+
+begin
+    anim = @animate for i=1:100:length(sol)
+        heatmap(sol[i], title="$i", clim=(0.0, 1.0), color=:grays)
+    end
+    gif(anim, fps=10)
+end
+
+figure = heatmap(sol[end], axis=false, color=:grays, title="Gradient flow - ϵ = $(problem.params.ϵ)")
+savefig("experiments/Figures/boring/boring_gradient_flow_ϵ = $(problem.params.ϵ).png")
