@@ -1,7 +1,62 @@
 ### Example of image inpainting
-<p align="center">
-<img src="experiments/Figures/boring/boring_damaged.png" width="400">
-<img src="experiments/Figures/boring/boring_image.png" width="400">
-<img src="experiments/Figures/boring/boring_gradient_flow_ϵ = 0.01.png" width="400">
-<img src="experiments/Figures/boring/boring_gradient_flow_ϵ = 0.1.png" width="400">
-</p>
+
+<h3 align="center">Comparison of Methods</h3>
+
+<table align="center">
+<tr>
+<td align="center">
+
+<b>Gradient Flow</b><br>
+<img src="experiments/Figures/boring/boring_gradient_flow.gif" width="400">
+
+</td>
+
+<td align="center">
+
+<b>Momentum Flow</b><br>
+    <img src="experiments/Figures/boring/boring_momentum_flow.gif" width="400">
+
+</td>
+</tr>
+
+
+</table>
+
+<table align="center">
+<tr>
+<td align="center">
+
+<b>Gradient Flow</b><br>
+<img src="experiments/Figures/circle/circle_gradient_flow.gif" width="400">
+
+</td>
+
+<td align="center">
+
+<b>Momentum Flow</b><br>
+    <img src="experiments/Figures/circle/circle_momentum_flow.gif" width="400">
+
+</td>
+</tr>
+</table>
+
+
+</table>
+
+<table align="center">
+<tr>
+<td align="center">
+
+<b>Gradient Flow</b><br>
+<img src="experiments/Figures/F1/F1_gradient_flow.gif" width="400">
+
+</td>
+
+<td align="center">
+
+<b>Momentum Flow</b><br>
+    <img src="experiments/Figures/F1/F1_momentum_flow.gif" width="400">
+
+</td>
+</tr>
+</table>

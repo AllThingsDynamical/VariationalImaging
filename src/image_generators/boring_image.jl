@@ -63,5 +63,6 @@ function plot_and_save(fimg::BoringImage, path::String)
     savefig(p3, joinpath(path,"boring_mask.png"))
 end
 
+include("../algorithms/utils.jl")
 bimg = make_boring_image(200,200)
 plot_and_save(bimg, "experiments/Figures/boring/")

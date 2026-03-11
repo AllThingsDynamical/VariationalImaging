@@ -1,5 +1,6 @@
 using FFTW
 using LinearAlgebra
+using Statistics
 
 function dct2(u)
     dct(dct(u,1),2)
@@ -37,6 +38,13 @@ function Fprime(u)
     return 1 .- 6 .* u .+ 6 .* u.^2
 end
 
+
+function psnr(u, uhat; L=1.0)
+    mse = mean((u .- uhat).^2)
+    return 10 * log10(L^2 / mse)
+end
+
+
 TEST = false
 if TEST
     bimg = make_boring_image(300, 600)
@@ -53,3 +61,41 @@ if TEST
 
     plot(figure1, figure2, figure3, figure4)
 end
+
+using Plots
+using LaTeXStrings
+using Measures
+
+# Global publication theme
+default(
+    fontfamily = "Computer Modern",
+    linewidth = 1.2,
+    markersize = 4,
+    legendfontsize = 9,
+    guidefontsize = 13,
+    tickfontsize = 11,
+    titlefontsize = 14,
+    framestyle = :box,
+    grid = false,
+    minorgrid = true,
+    tickdirection = :out,
+    foreground_color_border = :black,
+    foreground_color_axis = :black,
+    foreground_color_text = :black,
+    background_color = :white,
+    dpi = 500,
+    margin = 7.5mm)
+
+# Consistent color cycle (colorblind-safe, print-friendly)
+const PUB_COLORS = [
+    RGB(0.0, 0.2, 0.6),   # deep blue
+    RGB(0.8, 0.2, 0.2),   # red
+    RGB(0.2, 0.6, 0.2),   # green
+    RGB(0.6, 0.4, 0.0),   # ochre
+    RGB(0.4, 0.2, 0.6)    # purple
+]
+palette(PUB_COLORS)
+
+# Convenience wrapper for axis labels (LaTeX by default)
+xlabel!(s) = xlabel!(L"$s$")
+ylabel!(s) = ylabel!(L"$s$")

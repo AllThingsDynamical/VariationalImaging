@@ -20,28 +20,6 @@ struct BGCHParams
     end
 end
 
-function BGCHParams(;
-    dt::Float64 = 1.0,
-    ϵ::Float64 = 0.1,
-    λ0::Float64 = 1e8,
-    C1::Float64 = 4e3,
-    C2::Float64 = 1e8 + 1.0,
-    iters::Int = 30_000,
-    L1::Float64 = 1.0,
-    L2::Float64 = 1.0
-)
-    dt > 0 || error("dt must be positive")
-    ϵ > 0 || error("ϵ must be positive")
-    λ0 >= 0 || error("λ0 must be nonnegative")
-    iters > 0 || error("iters must be positive")
-    L1 > 0 || error("L1 must be positive")
-    L2 > 0 || error("L2 must be positive")
-
-    C1 > 1 / ϵ || error("C1 must satisfy C1 > 1/ϵ")
-    C2 >= λ0 || error("C2 must satisfy C2 >= λ0")
-
-    return BGCHParams(dt, ϵ, λ0, C1, C2, iters, L1, L2)
-end
 
 struct BGCHProblem
     experiment
@@ -80,32 +58,169 @@ function bgch_step(U::Matrix, problem::BGCHProblem, cache::BGCHCache)
     return idct2(U_next_hat)
 end
 
-
 function solve(problem::BGCHProblem)
     U = copy(problem.experiment.damaged)
     cache = BGCHCache(problem)
     Us = [U]
+    Qc = [psnr(problem.experiment.image, U)]
     @showprogress for k in 1:problem.params.iters
         U = bgch_step(U, problem, cache)
+        ps = psnr(problem.experiment.image, U)
         push!(Us, U)
+        push!(Qc, ps)
     end
-    return Us
+    return Us, Qc
 end
 
+BORING = false
+if BORING
+    function BGCHParams(;
+        dt::Float64 = 1.0,
+        ϵ::Float64 = 0.1,
+        λ0::Float64 = 1e8,
+        C1::Float64 = 4e3,
+        C2::Float64 = 1e8 + 1.0,
+        iters::Int = 1200,
+        L1::Float64 = 1.0,
+        L2::Float64 = 1.0
+    )
+        dt > 0 || error("dt must be positive")
+        ϵ > 0 || error("ϵ must be positive")
+        λ0 >= 0 || error("λ0 must be nonnegative")
+        iters > 0 || error("iters must be positive")
+        L1 > 0 || error("L1 must be positive")
+        L2 > 0 || error("L2 must be positive")
 
-begin
-    img = make_boring_image(200, 200)
-    params = BGCHParams()
-    problem = BGCHProblem(img, params)
-    sol = solve(problem)
-end
+        C1 > 1 / ϵ || error("C1 must satisfy C1 > 1/ϵ")
+        C2 >= λ0 || error("C2 must satisfy C2 >= λ0")
 
-begin
-    anim = @animate for i=1:100:length(sol)
-        heatmap(sol[i], title="$i", clim=(0.0, 1.0), color=:grays)
+        return BGCHParams(dt, ϵ, λ0, C1, C2, iters, L1, L2)
     end
-    gif(anim, fps=10)
+
+
+    begin
+        img = make_boring_image(200, 200)
+        params = BGCHParams()
+        problem = BGCHProblem(img, params)
+        sol, errs = solve(problem)
+    end
+
+    begin
+        anim = @animate for i=1:50:length(sol)
+            heatmap(sol[i], title="$i", clim=(0.0, 1.0), color=:grays)
+        end
+        gif(anim, "experiments/Figures/boring/boring_gradient_flow.gif", fps=5)
+    end
+
+
+    figure = heatmap(sol[end], axis=false, color=:grays, title="Gradient flow - ϵ = $(problem.params.ϵ)")
+    savefig("experiments/Figures/boring/boring_gradient_flow_ϵ = $(problem.params.ϵ).png")
+
+
+    figure = heatmap(abs.(sol[end] .- problem.experiment.image), axis=false, color=:grays, title="Reconstruction difference - Gradient flow")
+    savefig("experiments/Figures/boring/boring_error_gradient_flow_ϵ = $(problem.params.ϵ).png")
+
+    figure = plot(1:length(errs), errs, xlabel="Iterations", ylabel="PSNR", label="PSNR")
+    savefig("experiments/Figures/boring/boring_psnr_gradient_flow.png")
 end
 
-figure = heatmap(sol[end], axis=false, color=:grays, title="Gradient flow - ϵ = $(problem.params.ϵ)")
-savefig("experiments/Figures/boring/boring_gradient_flow_ϵ = $(problem.params.ϵ).png")
+CIRCLE = false
+if CIRCLE
+ function BGCHParams(;
+        dt::Float64 = 1.0,
+        ϵ::Float64 = 0.1,
+        λ0::Float64 = 1e8,
+        C1::Float64 = 4e3,
+        C2::Float64 = 1e8 + 1.0,
+        iters::Int = 1600,
+        L1::Float64 = 1.0,
+        L2::Float64 = 1.0
+    )
+        dt > 0 || error("dt must be positive")
+        ϵ > 0 || error("ϵ must be positive")
+        λ0 >= 0 || error("λ0 must be nonnegative")
+        iters > 0 || error("iters must be positive")
+        L1 > 0 || error("L1 must be positive")
+        L2 > 0 || error("L2 must be positive")
+
+        C1 > 1 / ϵ || error("C1 must satisfy C1 > 1/ϵ")
+        C2 >= λ0 || error("C2 must satisfy C2 >= λ0")
+
+        return BGCHParams(dt, ϵ, λ0, C1, C2, iters, L1, L2)
+    end
+
+
+    begin
+        img = make_circle_experiment(256, 256)
+        params = BGCHParams()
+        problem = BGCHProblem(img, params)
+        sol, errs = solve(problem)
+    end
+
+
+    begin
+        anim = @animate for i=1:50:length(sol)
+            heatmap(sol[i], title="$i", clim=(0.0, 1.0), color=:grays)
+        end
+        gif(anim, "experiments/Figures/circle/circle_gradient_flow.gif", fps=5)
+    end
+
+
+    figure = heatmap(sol[end], axis=false, color=:grays, title="Gradient flow - ϵ = $(problem.params.ϵ)")
+    savefig("experiments/Figures/circle/circle_gradient_flow_ϵ = $(problem.params.ϵ).png")
+
+
+    figure = heatmap(abs.(sol[end] .- problem.experiment.image), axis=false, color=:grays, title="Reconstruction difference - Gradient flow")
+    savefig("experiments/Figures/circle/circle_error_gradient_flow_ϵ = $(problem.params.ϵ).png")
+
+    figure = plot(1:length(errs), errs, xlabel="Iterations", ylabel="PSNR", label="PSNR")
+    savefig("experiments/Figures/circle/circle_psnr_gradient_flow.png")
+end
+
+ function BGCHParams(;
+        dt::Float64 = 1.0,
+        ϵ::Float64 = 0.1,
+        λ0::Float64 = 1e11,
+        C1::Float64 = 4e3,
+        C2::Float64 = 1e11 + 1.0,
+        iters::Int = 20_000,
+        L1::Float64 = 1.0,
+        L2::Float64 = 1.0
+    )
+        dt > 0 || error("dt must be positive")
+        ϵ > 0 || error("ϵ must be positive")
+        λ0 >= 0 || error("λ0 must be nonnegative")
+        iters > 0 || error("iters must be positive")
+        L1 > 0 || error("L1 must be positive")
+        L2 > 0 || error("L2 must be positive")
+
+        C1 > 1 / ϵ || error("C1 must satisfy C1 > 1/ϵ")
+        C2 >= λ0 || error("C2 must satisfy C2 >= λ0")
+
+        return BGCHParams(dt, ϵ, λ0, C1, C2, iters, L1, L2)
+    end
+
+
+    begin
+        img = make_fancy_image1()
+        params = BGCHParams()
+        problem = BGCHProblem(img, params)
+        sol, errs = solve(problem)
+    end
+
+     begin
+        anim = @animate for i=1:500:length(sol)
+            heatmap(sol[i], title="$i", color=:grays)
+        end
+        gif(anim, "experiments/Figures/F1/F1_gradient_flow.gif", fps=5)
+    end
+
+    figure = heatmap(sol[end], axis=false, color=:grays, title="Gradient flow - ϵ = $(problem.params.ϵ)")
+    savefig("experiments/Figures/F1/F1_gradient_flow_ϵ = $(problem.params.ϵ).png")
+
+
+    figure = heatmap(abs.(sol[end] .- problem.experiment.image), axis=false, color=:grays, title="Reconstruction difference - Gradient flow")
+    savefig("experiments/Figures/F1/F1_error_gradient_flow_ϵ = $(problem.params.ϵ).png")
+
+    figure = plot(1:length(errs), errs, xlabel="Iterations", ylabel="PSNR", label="PSNR")
+    savefig("experiments/Figures/F1/F1_psnr_gradient_flow.png")
