@@ -48,14 +48,14 @@
 <td align="center">
 
 <b>Gradient Flow</b><br>
-<img src="experiments/Figures/F1/F1_gradient_flow.gif" width="400">
+<img src="experiments/Figures/cross/cross_gradient_flow.gif" width="400">
 
 </td>
 
 <td align="center">
 
 <b>Momentum Flow</b><br>
-    <img src="experiments/Figures/F1/F1_momentum_flow.gif" width="400">
+    <img src="experiments/Figures/cross/cross_momentum_flow.gif" width="400">
 
 </td>
 </tr>

@@ -177,6 +177,8 @@ if CIRCLE
     savefig("experiments/Figures/circle/circle_psnr_gradient_flow.png")
 end
 
+FANCY = false
+if FANCY
  function BGCHParams(;
         dt::Float64 = 1.0,
         ϵ::Float64 = 0.1,
@@ -224,3 +226,53 @@ end
 
     figure = plot(1:length(errs), errs, xlabel="Iterations", ylabel="PSNR", label="PSNR")
     savefig("experiments/Figures/F1/F1_psnr_gradient_flow.png")
+end
+
+function BGCHParams(;
+        dt::Float64 = 1.0,
+        ϵ::Float64 = 0.5,
+        λ0::Float64 = 1e8,
+        C1::Float64 = 4e3,
+        C2::Float64 = 1e8 + 1.0,
+        iters::Int = 500,
+        L1::Float64 = 1.0,
+        L2::Float64 = 1.0
+    )
+        dt > 0 || error("dt must be positive")
+        ϵ > 0 || error("ϵ must be positive")
+        λ0 >= 0 || error("λ0 must be nonnegative")
+        iters > 0 || error("iters must be positive")
+        L1 > 0 || error("L1 must be positive")
+        L2 > 0 || error("L2 must be positive")
+
+        C1 > 1 / ϵ || error("C1 must satisfy C1 > 1/ϵ")
+        C2 >= λ0 || error("C2 must satisfy C2 >= λ0")
+
+        return BGCHParams(dt, ϵ, λ0, C1, C2, iters, L1, L2)
+    end
+
+
+    begin
+        img = make_cross_image(200, 200; cross_halfwidth=12, square_halfwidth=30)
+        params = BGCHParams()
+        problem = BGCHProblem(img, params)
+        sol, errs = solve(problem)
+    end
+
+
+    begin
+        anim = @animate for i=1:50:length(sol)
+            heatmap(sol[i], title="$i", clim=(0.0, 1.0), color=:grays)
+        end
+        gif(anim, "experiments/Figures/cross/cross_gradient_flow.gif", fps=5)
+    end
+
+    figure = heatmap(sol[end], axis=false, color=:grays, title="Gradient flow - ϵ = $(problem.params.ϵ)")
+    savefig("experiments/Figures/cross/cross_gradient_flow_ϵ = $(problem.params.ϵ).png")
+
+
+    figure = heatmap(abs.(sol[end] .- problem.experiment.image), axis=false, color=:grays, title="Reconstruction difference - Gradient flow")
+    savefig("experiments/Figures/cross/cross_error_gradient_flow_ϵ = $(problem.params.ϵ).png")
+
+    figure = plot(1:length(errs), errs, xlabel="Iterations", ylabel="PSNR", label="PSNR")
+    savefig("experiments/Figures/cross/cross_psnr_gradient_flow.png")

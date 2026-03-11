@@ -189,6 +189,8 @@ if CIRCLE
     savefig("experiments/Figures/circle/circle_psnr_momentum_flow.png")
 end
 
+FANCY = false
+if FANCY
  function Momentum_BGCHParams(;
         dt::Float64 = 1e-2,
         ϵ::Float64 = 0.1,
@@ -228,3 +230,45 @@ end
 
     figure = plot(1:length(errs), errs, xlabel="Iterations", ylabel="PSNR", label="PSNR")
     savefig("experiments/Figures/F1/F1_psnr_momentum_flow.png")
+end 
+
+ function Momentum_BGCHParams(;
+        dt::Float64 = 1e-2,
+        ϵ::Float64 = 0.5,
+        λ0::Float64 = 1e8,
+        γ::Float64 = 1.5e6,
+        C1::Float64 = 4e3,
+        C2::Float64 = 1e8 + 1.0,
+        iters::Int = 500,
+        L1::Float64 = 1.0,
+        L2::Float64 = 1.0
+    )
+        return Momentum_BGCHParams(dt, ϵ, λ0, γ, C1, C2, iters, L1, L2)
+    end
+
+
+    begin
+        img = img = make_cross_image(200, 200; cross_halfwidth=12, square_halfwidth=30)
+        params = Momentum_BGCHParams()
+        problem = BGCHProblem(img, params)
+        sol, errs = solve_momentum(problem)
+    end
+
+
+    begin
+        anim = @animate for i=1:50:length(sol)
+            heatmap(sol[i], title="$i", clim=(0.0, 1.0), color=:grays)
+        end
+        gif(anim, "experiments/Figures/cross/cross_momentum_flow.gif", fps=5)
+    end
+
+
+    figure = heatmap(sol[end], axis=false, color=:grays, title="Momentum flow - ϵ = $(problem.params.ϵ)")
+    savefig("experiments/Figures/cross/cross_momentum_flow_ϵ = $(problem.params.ϵ).png")
+
+
+    figure = heatmap(abs.(sol[end] .- problem.experiment.image), axis=false, color=:grays, title="Reconstruction difference - Momentum flow")
+    savefig("experiments/Figures/cross/cross_error_momentum_flow_ϵ = $(problem.params.ϵ).png")
+
+    figure = plot(1:length(errs), errs, xlabel="Iterations", ylabel="PSNR", label="PSNR")
+    savefig("experiments/Figures/cross/cross_psnr_momentum_flow.png")
