@@ -60,3 +60,20 @@
 </td>
 </tr>
 </table>
+<table align="center">
+<tr>
+<td align="center">
+
+<b>Gradient Flow</b><br>
+<img src="experiments/Figures/checker/checker_gradient_flow.gif" width="400">
+
+</td>
+
+<td align="center">
+
+<b>Momentum Flow</b><br>
+    <img src="experiments/Figures/checker/checker_momentum_flow.gif" width="400">
+
+</td>
+</tr>
+</table>
